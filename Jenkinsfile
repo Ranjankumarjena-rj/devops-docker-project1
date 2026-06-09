@@ -1,39 +1,33 @@
-pipeline {
+pipeline{
     agent any
     tools{
-        maven 'maven_3_5_0'
+        jdk 'JAVA_HOME'
+        maven 'M2_HOME'
     }
     stages{
-        stage('Build Maven'){
+        stage ("checkout"){
             steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Java-Techie-jt/devops-automation']]])
-                sh 'mvn clean install'
+                git branch: 'main', url: 'https://github.com/Ranjankumarjena-rj/devops-docker-project1.git'
             }
         }
-        stage('Build docker image'){
+        stage ("build"){
             steps{
-                script{
-                    sh 'docker build -t javatechie/devops-integration .'
-                }
-            }
+              sh 'mvn clean package'
         }
-        stage('Push image to Hub'){
-            steps{
-                script{
-                   withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
-                   sh 'docker login -u javatechie -p ${dockerhubpwd}'
-
-}
-                   sh 'docker push javatechie/devops-integration'
-                }
-            }
-        }
-        stage('Deploy to k8s'){
-            steps{
-                script{
-                    kubernetesDeploy (configs: 'deploymentservice.yaml',kubeconfigId: 'k8sconfigpwd')
-                }
-            }
-        }
+      }
+        stage ("docker build"){
+          steps{
+              sh 'docker build -t ranjankumarjena/docker-project:latest .'
+          }
+          }
+         stage ("docker push"){
+             steps{
+                 withCredentials([string(credentialsId: 'pass', variable: 'password')]) {
+                 sh "docker login -u ranjankumarjena -p ${password}"
+                 
+                 sh 'docker push ranjankumarjena/docker-project:latest'
+               }
+             }
+         }
     }
 }
